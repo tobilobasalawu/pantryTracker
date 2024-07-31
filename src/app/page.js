@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, Button, Modal, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import { firestore } from './firebase';
 import { collection, doc, getDocs, query, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { bgcolor } from '@mui/system';
 
 const style = {
   position: 'absolute',
@@ -22,11 +23,13 @@ const style = {
 
 export default function Home() {
   const [inventory, setInventory] = useState([]);
+  const [filteredInventory, setFilteredInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
   const [price, setPrice] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, 'inventory'));
@@ -41,6 +44,18 @@ export default function Home() {
   useEffect(() => {
     updateInventory();
   }, []);
+
+  useEffect(() => {
+    if (searchTerm === '') {
+      setFilteredInventory(inventory);
+    } else {
+      setFilteredInventory(
+        inventory.filter((item) =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+  }, [searchTerm, inventory]);
 
   const addItem = async (item) => {
     const docRef = doc(collection(firestore, 'inventory'), item);
@@ -153,6 +168,13 @@ export default function Home() {
       <Button variant="contained" onClick={handleOpen}>
         Add New Item
       </Button>
+      <TextField
+        label="Search Items"
+        variant="outlined"
+        sx={{ mb: 2, width: '50%' }}
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
       <Box border={'1px solid #333'}>
         <Box
           width="800px"
@@ -170,22 +192,22 @@ export default function Home() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Items</TableCell>
-                <TableCell>Quantity</TableCell>
-                <TableCell>Price</TableCell>
-                <TableCell>Expiration Date</TableCell>
-                <TableCell>Action</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Items</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Quantity</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Price</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Expiration Date</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {inventory.length === 0 ? (
+              {filteredInventory.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center">
                     No items available
                   </TableCell>
                 </TableRow>
               ) : (
-                inventory.map(({ name, quantity, expirationDate, price }) => (
+                filteredInventory.map(({ name, quantity, expirationDate, price }) => (
                   <TableRow key={name}>
                     <TableCell>{name.charAt(0).toUpperCase() + name.slice(1)}</TableCell>
                     <TableCell>{quantity}</TableCell>
