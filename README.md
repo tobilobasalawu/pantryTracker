@@ -108,6 +108,3 @@ You can deploy your Next.js app to Vercel with the following steps:
 - [Material-UI](https://mui.com/)
 - [Firebase](https://firebase.google.com/)
 
----
-
-Feel free to customize this README file to better fit your project's specifics and your preferred style.
