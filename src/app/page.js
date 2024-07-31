@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Typography, Button, Modal, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Box, Typography, Button, Modal, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Grid } from '@mui/material';
 import { firestore } from './firebase';
 import { collection, doc, getDocs, query, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
-import { bgcolor } from '@mui/system';
 
 const style = {
   position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: 400,
+  width: '90%',
+  maxWidth: 400,
   bgcolor: 'white',
   border: '2px solid #000',
   boxShadow: 24,
@@ -104,11 +104,13 @@ export default function Home() {
     <Box
       width="100vw"
       height="100vh"
-      display={'flex'}
-      justifyContent={'center'}
-      flexDirection={'column'}
-      alignItems={'center'}
+      display="flex"
+      justifyContent="center"
+      flexDirection="column"
+      alignItems="center"
       gap={2}
+      p={2}
+      sx={{ boxSizing: 'border-box' }}
     >
       <Modal
         open={open}
@@ -171,20 +173,22 @@ export default function Home() {
       <TextField
         label="Search Items"
         variant="outlined"
-        sx={{ mb: 2, width: '50%' }}
+        sx={{ mb: 2, width: '100%', maxWidth: 600 }}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
-      <Box border={'1px solid #333'}>
+      <Box border={'1px solid #333'} width="100%">
         <Box
-          width="800px"
+          width="100%"
+          maxWidth="1850px"
           height="100px"
           bgcolor={'#ADD8E6'}
           display={'flex'}
           justifyContent={'center'}
           alignItems={'center'}
+          p={2}
         >
-          <Typography variant={'h2'} color={'#333'} textAlign={'center'}>
+          <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
             Inventory Items
           </Typography>
         </Box>
@@ -214,7 +218,7 @@ export default function Home() {
                     <TableCell>${price}</TableCell>
                     <TableCell>{expirationDate}</TableCell>
                     <TableCell>
-                      <Button variant="contained" sx={{ bgcolor : '#ff0000'}} onClick={() => removeItem(name)}>
+                      <Button variant="contained" sx={{ bgcolor: '#ff0000' }} onClick={() => removeItem(name)}>
                         Remove
                       </Button>
                     </TableCell>
