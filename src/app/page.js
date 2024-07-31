@@ -214,7 +214,7 @@ export default function Home() {
                     <TableCell>${price}</TableCell>
                     <TableCell>{expirationDate}</TableCell>
                     <TableCell>
-                      <Button variant="contained" onClick={() => removeItem(name)}>
+                      <Button variant="contained" sx={{ bgcolor : '#ff0000'}} onClick={() => removeItem(name)}>
                         Remove
                       </Button>
                     </TableCell>
