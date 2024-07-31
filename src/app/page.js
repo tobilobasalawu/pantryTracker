@@ -215,7 +215,7 @@ export default function Home() {
                   <TableRow key={name}>
                     <TableCell>{name.charAt(0).toUpperCase() + name.slice(1)}</TableCell>
                     <TableCell>{quantity}</TableCell>
-                    <TableCell>${price}</TableCell>
+                    <TableCell>£{price}</TableCell>
                     <TableCell>{expirationDate}</TableCell>
                     <TableCell>
                       <Button variant="contained" sx={{ bgcolor: '#ff0000' }} onClick={() => removeItem(name)}>
