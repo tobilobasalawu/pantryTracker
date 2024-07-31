@@ -1,10 +1,9 @@
-'use client'
+'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Stack, Typography, Button, Modal, TextField } from '@mui/material';
+import { Box, Typography, Button, Modal, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import { firestore } from './firebase';
 import { collection, doc, getDocs, query, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const style = {
   position: 'absolute',
@@ -26,7 +25,6 @@ export default function Home() {
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState('');
   const [quantity, setQuantity] = useState('');
-  const [image, setImage] = useState(null);
   const [expirationDate, setExpirationDate] = useState('');
   const [price, setPrice] = useState('');
 
@@ -45,29 +43,18 @@ export default function Home() {
   }, []);
 
   const addItem = async (item) => {
-    const storage = getStorage();
-    let imageURL = '';
-
-    if (image) {
-      const storageRef = ref(storage, `images/${itemName}-${Date.now()}`);
-      await uploadBytes(storageRef, image);
-      imageURL = await getDownloadURL(storageRef);
-    }
-
     const docRef = doc(collection(firestore, 'inventory'), item);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const { quantity: existingQuantity } = docSnap.data();
       await setDoc(docRef, {
         quantity: existingQuantity + Number(quantity),
-        imageURL,
         expirationDate,
         price: Number(price),
-      });
+      }, { merge: true });
     } else {
       await setDoc(docRef, {
         quantity: Number(quantity),
-        imageURL,
         expirationDate,
         price: Number(price),
       });
@@ -80,10 +67,10 @@ export default function Home() {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const { quantity } = docSnap.data();
-      if (quantity === 1) {
-        await deleteDoc(docRef);
+      if (quantity > 1) {
+        await setDoc(docRef, { quantity: quantity - 1 }, { merge: true });
       } else {
-        await setDoc(docRef, { quantity: quantity - 1 });
+        await deleteDoc(docRef);
       }
     }
     await updateInventory();
@@ -94,15 +81,8 @@ export default function Home() {
     setOpen(false);
     setItemName('');
     setQuantity('');
-    setImage(null);
     setExpirationDate('');
     setPrice('');
-  };
-
-  const handleImageUpload = (event) => {
-    if (event.target.files.length > 0) {
-      setImage(event.target.files[0]);
-    }
   };
 
   return (
@@ -125,62 +105,49 @@ export default function Home() {
           <Typography id="modal-modal-title" variant="h6" component="h2">
             Add Item
           </Typography>
-          <Stack width="100%" direction={'column'} spacing={2}>
-            <TextField
-              id="outlined-basic"
-              label="Item Name"
-              variant="outlined"
-              fullWidth
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-            />
-            <TextField
-              id="outlined-basic"
-              label="Quantity"
-              variant="outlined"
-              fullWidth
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-            />
-            <Button
-              variant="outlined"
-              component="label"
-            >
-              Upload Image
-              <input
-                type="file"
-                hidden
-                onChange={handleImageUpload}
-              />
-            </Button>
-            <TextField
-              id="outlined-basic"
-              label="Expiration Date"
-              variant="outlined"
-              fullWidth
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              value={expirationDate}
-              onChange={(e) => setExpirationDate(e.target.value)}
-            />
-            <TextField
-              id="outlined-basic"
-              label="Price"
-              variant="outlined"
-              fullWidth
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-            <Button
-              variant="outlined"
-              onClick={() => {
-                addItem(itemName);
-                handleClose();
-              }}
-            >
-              Add
-            </Button>
-          </Stack>
+          <TextField
+            id="outlined-basic"
+            label="Item Name"
+            variant="outlined"
+            fullWidth
+            value={itemName}
+            onChange={(e) => setItemName(e.target.value)}
+          />
+          <TextField
+            id="outlined-basic"
+            label="Quantity"
+            variant="outlined"
+            fullWidth
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
+          <TextField
+            id="outlined-basic"
+            label="Expiration Date"
+            variant="outlined"
+            fullWidth
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            value={expirationDate}
+            onChange={(e) => setExpirationDate(e.target.value)}
+          />
+          <TextField
+            id="outlined-basic"
+            label="Price"
+            variant="outlined"
+            fullWidth
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+          <Button
+            variant="outlined"
+            onClick={() => {
+              addItem(itemName);
+              handleClose();
+            }}
+          >
+            Add
+          </Button>
         </Box>
       </Modal>
       <Button variant="contained" onClick={handleOpen}>
@@ -199,53 +166,42 @@ export default function Home() {
             Inventory Items
           </Typography>
         </Box>
-        <Stack width="800px" height="300px" spacing={2} overflow={'auto'}>
-          {inventory.length === 0 ? (
-            <Box
-              width="100%"
-              minHeight="150px"
-              display={'flex'}
-              justifyContent={'center'}
-              alignItems={'center'}
-            >
-              <Typography variant={'h4'} color={'#333'} textAlign={'center'}>
-                No items available
-              </Typography>
-            </Box>
-          ) : (
-            inventory.map(({ name, quantity, imageURL, expirationDate, price }) => (
-              <Box
-                key={name}
-                width="100%"
-                minHeight="150px"
-                display={'flex'}
-                justifyContent={'space-between'}
-                alignItems={'center'}
-                bgcolor={'#f0f0f0'}
-                paddingX={5}
-              >
-                <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
-                  {name.charAt(0).toUpperCase() + name.slice(1)}
-                </Typography>
-                <Typography variant={'h4'} color={'#333'} textAlign={'center'}>
-                  Quantity: {quantity}
-                </Typography>
-                {imageURL && (
-                  <img src={imageURL} alt={`${name}`} style={{ height: 50 }} />
-                )}
-                <Typography variant={'h4'} color={'#333'} textAlign={'center'}>
-                  Expiration Date: {expirationDate}
-                </Typography>
-                <Typography variant={'h4'} color={'#333'} textAlign={'center'}>
-                  Price: ${price}
-                </Typography>
-                <Button variant="contained" onClick={() => removeItem(name)}>
-                  Remove
-                </Button>
-              </Box>
-            ))
-          )}
-        </Stack>
+        <TableContainer component={Paper} sx={{ width: '100%' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Items</TableCell>
+                <TableCell>Quantity</TableCell>
+                <TableCell>Price</TableCell>
+                <TableCell>Expiration Date</TableCell>
+                <TableCell>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {inventory.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    No items available
+                  </TableCell>
+                </TableRow>
+              ) : (
+                inventory.map(({ name, quantity, expirationDate, price }) => (
+                  <TableRow key={name}>
+                    <TableCell>{name.charAt(0).toUpperCase() + name.slice(1)}</TableCell>
+                    <TableCell>{quantity}</TableCell>
+                    <TableCell>${price}</TableCell>
+                    <TableCell>{expirationDate}</TableCell>
+                    <TableCell>
+                      <Button variant="contained" onClick={() => removeItem(name)}>
+                        Remove
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Box>
     </Box>
   );
