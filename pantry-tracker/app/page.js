@@ -1,17 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Box, Stack, Typography, Button, Modal, TextField } from '@mui/material'
-import { firestore } from './firebase'
+import { useState, useEffect, useRef } from 'react';
+import { Box, Stack, Typography, Button, Modal, TextField } from '@mui/material';
+import Webcam from 'react-webcam';
+import { firestore } from './firebase';
 import {
   collection,
   doc,
   getDocs,
-  query,
   setDoc,
   deleteDoc,
   getDoc,
-} from 'firebase/firestore'
+} from 'firebase/firestore';
 
 const style = {
   position: 'absolute',
@@ -26,59 +26,84 @@ const style = {
   display: 'flex',
   flexDirection: 'column',
   gap: 3,
-}
+};
+
+const classifyImage = async (imageSrc) => {
+  // Simulate image classification
+  // Replace this with an actual API call to GPT Vision or other LLM
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve('classified-label');
+    }, 1000);
+  });
+};
 
 export default function Home() {
-  // We'll add our component logic here
-  const [inventory, setInventory] = useState([])
-  const [open, setOpen] = useState(false)
-  const [itemName, setItemName] = useState('')
+  const [inventory, setInventory] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [itemName, setItemName] = useState('');
+  const webcamRef = useRef(null);
 
   const updateInventory = async () => {
-    const snapshot = query(collection(firestore, 'inventory'))
-    const docs = await getDocs(snapshot)
-    const inventoryList = []
-    docs.forEach((doc) => {
-      inventoryList.push({ name: doc.id, ...doc.data() })
-    })
-    setInventory(inventoryList)
-  }
-  
-  useEffect(() => {
-    updateInventory()
-  }, [])
+    try {
+      const inventoryRef = collection(firestore, 'inventory');
+      const snapshot = await getDocs(inventoryRef);
+      const inventoryList = [];
+      snapshot.forEach((doc) => {
+        inventoryList.push({ name: doc.id, ...doc.data() });
+      });
+      setInventory(inventoryList);
+    } catch (error) {
+      console.error('Error fetching inventory: ', error);
+    }
+  };
 
+  useEffect(() => {
+    updateInventory();
+  }, []);
+
+  const captureAndClassifyImage = async () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    const label = await classifyImage(imageSrc);
+    await addItem(label);
+  };
 
   const addItem = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-      const { quantity } = docSnap.data()
-      await setDoc(docRef, { quantity: quantity + 1 })
-    } else {
-      await setDoc(docRef, { quantity: 1 })
-    }
-    await updateInventory()
-  }
-  
-  const removeItem = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-      const { quantity } = docSnap.data()
-      if (quantity === 1) {
-        await deleteDoc(docRef)
+    try {
+      const docRef = doc(firestore, 'inventory', item);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const { quantity } = docSnap.data();
+        await setDoc(docRef, { quantity: quantity + 1 });
       } else {
-        await setDoc(docRef, { quantity: quantity - 1 })
+        await setDoc(docRef, { quantity: 1 });
       }
+      await updateInventory();
+    } catch (error) {
+      console.error('Error adding item: ', error);
     }
-    await updateInventory()
-  }
+  };
 
-  const handleOpen = () => setOpen(true)
-  const handleClose = () => setOpen(false)
+  const removeItem = async (item) => {
+    try {
+      const docRef = doc(firestore, 'inventory', item);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const { quantity } = docSnap.data();
+        if (quantity === 1) {
+          await deleteDoc(docRef);
+        } else {
+          await setDoc(docRef, { quantity: quantity - 1 });
+        }
+      }
+      await updateInventory();
+    } catch (error) {
+      console.error('Error removing item: ', error);
+    }
+  };
 
-
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
 
   return (
     <Box
@@ -112,9 +137,9 @@ export default function Home() {
             <Button
               variant="outlined"
               onClick={() => {
-                addItem(itemName)
-                setItemName('')
-                handleClose()
+                addItem(itemName);
+                setItemName('');
+                handleClose();
               }}
             >
               Add
@@ -122,6 +147,15 @@ export default function Home() {
           </Stack>
         </Box>
       </Modal>
+      <Webcam
+        audio={false}
+        ref={webcamRef}
+        screenshotFormat="image/jpeg"
+        width={400}
+      />
+      <Button variant="contained" onClick={captureAndClassifyImage}>
+        Capture and Classify Image
+      </Button>
       <Button variant="contained" onClick={handleOpen}>
         Add New Item
       </Button>
@@ -139,7 +173,7 @@ export default function Home() {
           </Typography>
         </Box>
         <Stack width="800px" height="300px" spacing={2} overflow={'auto'}>
-          {inventory.map(({name, quantity}) => (
+          {inventory.map(({ name, quantity }) => (
             <Box
               key={name}
               width="100%"
@@ -164,6 +198,5 @@ export default function Home() {
         </Stack>
       </Box>
     </Box>
-  )
-
+  );
 }
