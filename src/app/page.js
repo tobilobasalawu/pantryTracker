@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography, Button, Modal, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Grid } from '@mui/material';
 import { firestore } from './firebase';
-import { collection, doc, getDocs, query, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, query, setDoc, deleteDoc, getDoc, writeBatch } from 'firebase/firestore';
 
 const style = {
   position: 'absolute',
@@ -92,9 +92,9 @@ export default function Home() {
   };
 
   const clearAllItems = async () => {
+    const batch = writeBatch(firestore);
     const snapshot = query(collection(firestore, 'inventory'));
     const docs = await getDocs(snapshot);
-    const batch = firestore.batch();
     docs.forEach((doc) => {
       batch.delete(doc.ref);
     });
@@ -178,14 +178,12 @@ export default function Home() {
           </Button>
         </Box>
       </Modal>
-      <Box display="flex" gap={2}>
-        <Button variant="contained" onClick={handleOpen}>
-          Add New Item
-        </Button>
-        <Button variant="contained" sx={{ bgcolor: 'red' }} onClick={clearAllItems}>
-          Clear All
-        </Button>
-      </Box>
+      <Button variant="contained" onClick={handleOpen}>
+        Add New Item
+      </Button>
+      <Button variant="contained" color="error" onClick={clearAllItems}>
+        Clear All Items
+      </Button>
       <TextField
         label="Search Items"
         variant="outlined"
