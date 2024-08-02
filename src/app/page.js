@@ -91,6 +91,17 @@ export default function Home() {
     await updateInventory();
   };
 
+  const clearAllItems = async () => {
+    const snapshot = query(collection(firestore, 'inventory'));
+    const docs = await getDocs(snapshot);
+    const batch = firestore.batch();
+    docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    await updateInventory();
+  };
+
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
     setOpen(false);
@@ -167,9 +178,14 @@ export default function Home() {
           </Button>
         </Box>
       </Modal>
-      <Button variant="contained" onClick={handleOpen}>
-        Add New Item
-      </Button>
+      <Box display="flex" gap={2}>
+        <Button variant="contained" onClick={handleOpen}>
+          Add New Item
+        </Button>
+        <Button variant="contained" sx={{ bgcolor: 'red' }} onClick={clearAllItems}>
+          Clear All
+        </Button>
+      </Box>
       <TextField
         label="Search Items"
         variant="outlined"
